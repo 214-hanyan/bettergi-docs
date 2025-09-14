@@ -170,7 +170,7 @@ try {
 ```
 ## 文件写入方法 (0.44.3 新增)
 
-### 1. 同步写入 - writeTextSync
+### 1. 同步写入文本 - writeTextSync
 
 ```javascript
 const result = file.writeTextSync(path, content, append);
@@ -193,7 +193,7 @@ const result1 = file.writeTextSync("test/example.txt", "这是覆盖写入的内
 const result2 = file.writeTextSync("test/example.txt", "这是追加的内容", true);
 ```
 
-### 2. 异步写入 - writeText
+### 2. 异步写入文本 - writeText
 
 ```javascript
 // Promise方式
@@ -254,6 +254,42 @@ Promise方式：
 })();
 ```
 
+### 3. 同步保存图片 - writeImageSync (0.48.2 新增) 
+
+```javascript
+const result = file.writeImageSync(path, mat);
+```
+
+**参数说明：**
+- `path`: 文件路径（字符串，可不带扩展名；不带时将自动追加 `.png`）
+- `mat`: 要保存的图片（OpenCV Mat 矩阵）
+
+**返回值：**
+- 布尔值，表示保存是否成功
+
+**示例：**
+
+无扩展名时自动以 PNG 保存：
+```javascript
+// 文件路径重复则覆盖原图
+const ra = captureGameRegion();
+const mat = ra.DeriveCrop(100, 200, 300, 150).SrcMat;
+const result = file.WriteImageSync("test/image.png", mat);
+// const ok = file.WriteImageSync("test/image", mat); // 实际保存为 test/image.png
+if (result) {
+  log.info("保存图片成功");
+}
+```
+
+指定为 JPG 保存：
+```javascript
+const result = file.WriteImageSync("test/photo.jpg", mat);
+```
+
+**说明：**
+- 支持的图片扩展名：`.png`, `.jpg`, `.jpeg`, `.bmp`, `.tiff`, `.webp`
+- 目标目录不存在时会自动创建
+- 同名文件将被覆盖
 
 
 ## 完整示例
@@ -320,6 +356,53 @@ Promise方式：
   await callbackWriteExample();
 })();
 ```
+## 文件目录相关方法 (0.45.1 新增)
+
+### 1. 单级子目录读取 - readPathSync
+
+```javascript
+let allPaths = file.readPathSync(path);
+```
+
+**参数说明：**
+- `path`: 要读取的文件夹路径（字符串）
+
+**返回值：**
+- 字符串数组（需要二次转换为JavaScript的标准数组）
+
+**示例：**
+```javascript
+// 读取指定路径下所有文件和文件夹的路径（非递归）
+let allPaths = file.readPathSync(path);
+
+// 将返回值转换为标准数组
+allPaths = Array.from(allPaths);
+
+log.info(`当前目录下的内容: ${allPaths.join(" ")}`);
+```
+
+### 2. 判断路径是否为文件夹 - isFolder
+
+```javascript
+let isFolder = file.isFolder(path);
+```
+
+**参数说明：**
+- `path`: 要判断的文件夹/文件夹路径（字符串）
+
+**返回值：**
+- 布尔值(boolean)
+	**true** 表示传入的路径指向一个**文件夹**
+	**false** 表示传入的路径指向一个**文件**
+
+**示例：**
+```javascript
+let p = "D:/转生成为雷电将军 然后天下无敌.txt"
+
+const isFolder = file.isFolder(path);
+
+log.info(`当前路径是否为文件夹: ${isFolder}`); // 本示例的file.isFlase的返回值为 false
+```
 
 ## 文件读写组合示例
 
@@ -359,6 +442,54 @@ Promise方式：
   await readModifyWriteExample();
 })();
 ```
+
+## 文件读取与目录相关操作组合示例（实际应用）
+
+以下示例中提及的 ```sha256To8()``` 方法 和 ```JSON文件``` 未在此处给出，本示例仅提供一种**文件读取**与**目录相关操作**结合的实际应用(本代码段可在JS脚本: AutoPathingLoader-MultiUser 的 main.js 中找到)
+
+```javascript
+(async function () {
+  /**
+     * 异步计算指定文件夹中所有 JSON 文件内容的 SHA-256 哈希值（返回8位数字字符串）(附带JS版号)。
+     *
+     * 该方法执行步骤如下：
+     * 1. 调用 file.readPathSync() 读取指定文件夹下所有文件和文件夹的路径（非递归）。
+     * 2. 使用 Array.from() 将返回值转换为标准数组。
+     * 3. 过滤出所有非文件夹且文件名以 ".json" 结尾的路径。
+     * 4. 将这些 JSON 文件内容读取后合并成一个总体字符串。
+     * 5. 调用自定义的 sha256To8() 方法生成并返回 8 位数字的哈希值。
+     * 6. 如果没有符合条件的 JSON 文件，返回 "00000000"。
+     *
+     * @param {string} path - 文件夹路径（相对于根目录）。
+     * @returns {Promise<string>} 返回一个 Promise，其解析结果为8位数字格式的哈希值字符串。
+     */
+    async function getSha256FromPath(path) {
+        // 读取指定路径下所有文件和文件夹的路径（非递归）
+        let allPaths = file.readPathSync(path);
+
+        // 将返回值转换为标准数组，以确保可以使用 filter 方法
+        allPaths = Array.from(allPaths);
+
+        // 过滤出所有非文件夹且以 ".json" 结尾的文件路径
+        const jsonPaths = allPaths.filter(p => !file.isFolder(p) && p.endsWith(".json"));
+
+        // 读取JS版号
+        const version = JSON.parse(file.readTextSync("manifest.json"))["version"];
+        
+        // 如果有符合条件的文件，读取并合并文件内容后计算哈希
+        if (jsonPaths.length > 0) {
+            const combinedContent = jsonPaths
+                .map(p => file.readTextSync(p))
+                .join('');
+            return sha256To8(version + combinedContent);
+        } else {
+            // 如果没有符合条件的文件，则返回 "00000000"
+            return "00000000";
+        }
+    }
+})();
+```
+
 ## 注意事项
 
 1. **路径安全**：所有路径都会被规范化和验证，确保不会访问到根目录以外的文件
@@ -372,8 +503,19 @@ Promise方式：
    - 默认以彩色模式(ImreadModes.Color)读取图像
 
 4. **文件扩展名限制**：只允许写入以下扩展名的文件：
-   - .txt, .json, .log, .csv, .xml, .html, .css
+   - 文本/数据：`.txt`, `.json`, `.log`, `.csv`, `.xml`, `.html`, `.css`
+   - 图片：`.png`, `.jpg`, `.jpeg`, `.bmp`, `.tiff`, `.webp`
 
 5. **文件大小限制**：写入内容不能超过999MB
 
 6. **目录创建**：如果文件所在目录不存在，会自动创建
+
+7. **目录读取**：```file.readPathSync(path)``` 读取到的目录数组建议使用 ```Array.from()``` 处理后再使用
+
+8. **图片保存**：
+   - `WriteImageSync(path, mat)` 为同步方法，返回布尔值
+   - `path` 不带扩展名时将自动追加 `.png`
+   - 仅允许保存为：`.png`, `.jpg`, `.jpeg`, `.bmp`, `.tiff`, `.webp`
+   - 目标目录不存在会自动创建；同名文件将被覆盖
+
+

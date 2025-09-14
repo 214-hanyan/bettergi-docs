@@ -1,6 +1,9 @@
 # 本地远程多用户后台挂机指南
 [RDP Wrapper CnC](https://github.com/sebaxakerhtc/rdpwrap) 是一个开源工具，用于在 Windows 系统上启用多用户远程桌面连接（RDP），适用于 Windows 7/8/10/11 系统。
 
+## 重要提示
+- 强烈不建议使用**任何第三方 Windows 系统修改**工具（包括所谓“优化大师”“一键精简”“系统瘦身”“预装软件移除”等工具）。此类工具极易导致本教程完全失效、关键功能异常或稳定性问题。
+
 ## 下载软件
 从 GitHub 仓库下载最新版本，进入 [Releases](https://github.com/sebaxakerhtc/rdpwrap/releases/tag/v1.8.9.9) 页面下载 `RDPW_Installer.exe`，以防**安装过程中出现错误**或者将来不再使用 RDP Wrapper CnC ，可以下载 `RDPW_Uninstaller.exe`。
 ## 安装软件
@@ -9,7 +12,7 @@
 ### 开始安装
 右键以管理员身份运行 `RDPW_Installer.exe`，并等待控制台应用（黑色窗口）结束，此程序会自动安装并配置多用户远程桌面连接。
 ### 安装结束后检查
-安装结束后在桌面生成快捷方式，并在 `C:\Program Files\RDP Wrapper` (无法修改安装目录) 目录下生成五个文件，进入下一步之前请检查文件是否完整，如果不完整请检查你的 第一步 **安装前的准备** 是否完成。
+安装结束后在桌面生成快捷方式，并在 `C:\Program Files\RDP Wrapper` (无法修改安装目录，请不要自行尝试) 目录下生成五个文件，进入下一步之前请检查文件是否完整，如果不完整请检查你的 第一步 **安装前的准备** 是否完成。
 
 ![0f4d85a4df1de53e9928c2a497a0b734](https://github.com/user-attachments/assets/adfc54d2-b86c-45fd-9ab3-03c235ad1e59)
 
@@ -30,7 +33,8 @@
 ![2597e73e6bc1b4f9b0303bcb4f3cba9b](https://github.com/user-attachments/assets/25a9edca-d681-445f-a10b-76010ba75e4c)
 
 其他版本建立新用户的途径不同，请自行检索。
-## 添加新用户到远程桌面用户组
+## 添加新用户到远程桌面用户组（可选）
+- 你在 **建立 Windows 新用户** 步骤中，如果没有授予管理员权限，才需要进行该操作。
 - 打开本地用户和组：
   - Win + R → 输入 `lusrmgr.msc` → 回车
 - 添加用户到远程桌面用户组
@@ -41,29 +45,7 @@
 
 ![4fef15c6dcf691a46a21dd8631274e7c](https://github.com/user-attachments/assets/1d50ffa5-f4a8-4cf8-8082-ad3304356883)
 
-##  修改组策略
-### 专业版
-打开组策略编辑器：Win + R → 输入 `gpedit.msc` → 回车。导航到以下路径：计算机配置 > 管理模板 > Windows 组件 > 远程桌面服务 > 远程桌面会话主机 > 连接，修改以下设置。
-- “允许用户通过远程桌面服务远程连接”：`已启用`。
-- “限制连接数”：设置为允许的最大并发用户数（建议大于`3`）。
-- “将远程桌面服务用户限制到单独的远程桌面服务会话”：`禁用`（可选）。
 
-![image](https://github.com/user-attachments/assets/868ef0af-928b-4acd-8bba-4743d38e6b14)
-
-### 家庭版 (专业版也可以使用这种方法)
-使用 `PowerShell` 修改组策略，Win + R → 输入 `powershell` → 回车，输入下面三个命令完成修改：
-- 设置 "允许用户通过使用远程桌面服务进行远程连接" 为启用：
-```PowerShell
-Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" -Value 0
-```
-- 设置限制连接的数量为 999999：
-```PowerShell
-Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Terminal Server" -Name "MaxInstanceCount" -Value 999999
-```
-- 设置 "将远程桌面服务用户限制到单独的远程桌面服务会话" 为禁用：
-```PowerShell
-Set-ItemProperty -Path "HKLM:\Software\Policies\Microsoft\Windows NT\Terminal Services" -Name "fSingleSessionPerUser" -Value 0
-```
 ## 启动本地远程连接
 ### 使用RDP_CnC 打开windows自带的本地远程
 完成上述配置后，您可通过以下简易步骤建立远程连接：
@@ -78,7 +60,23 @@ Set-ItemProperty -Path "HKLM:\Software\Policies\Microsoft\Windows NT\Terminal Se
 - 输入远程ip：`127.0.0.2` (本地回环地址，指向本机，可选择 `127.0.0.2`- `127.0.0.254`)，输入预先创建的用户名和密码，点击确认。
 - 成功连接后，将进入新建用户的独立桌面环境。若失败，请检查前面的所有步骤。
 ### 使用第三方远程桌面软件
-如 `1Remote`, `SimpleRemote`，可能会有更优秀的表现，请自行探索。
+如 `1Remote`, `SimpleRemote`，下面以 [1Remote](https://1remote.org/zh-cn/) 为例，演示连接过程。
+
+![1Remote主界面](https://github.com/user-attachments/assets/e17cc9db-9fcc-400c-a6f5-5dfacfd3c759)
+
+点击图中的加号，选择 `添加`。不出意外你能看到以下界面：
+
+![1Remote添加界面](https://github.com/user-attachments/assets/b27935a5-93f3-4972-96d8-9b73c8e2d4f5)
+
+根据喜好命名、选择图标和颜色之后，往下滚动页面，输入用户名，密码和远程ip: `127.0.0.2`，分辨率选择自定义分辨率（拉伸），1920*1080。如图：
+
+![1](https://github.com/user-attachments/assets/69ea322a-eaad-40e3-94c7-5aa0e6b5b57a)
+
+![12](https://github.com/user-attachments/assets/92d18db7-1264-4cbc-bbcd-0531bcd353a3)
+
+点击 `添加` 或者 `保存` 即可。随后在主界面双击你刚刚创建的本地远程连接，点击 `确定` 即可成功连接
+
+![123](https://github.com/user-attachments/assets/7e3defe8-40e3-4ea3-b764-09bce4c565fd)
 
 ## 免责声明
 本教程仅用于技术研究及合法多用户协作场景，请遵守微软远程桌面协议（RDP）许可条款。滥用可能导致系统安全风险或违反用户协议。
@@ -109,8 +107,10 @@ Set-ItemProperty -Path "HKLM:\Software\Policies\Microsoft\Windows NT\Terminal Se
 ![87b89bc678de68fc850eb3f72e2e8b7b](https://github.com/user-attachments/assets/03140d9b-b843-4442-b5dd-4219b9e4c5d2)
 
 - 发生原因是未设置新用户的密码，可以通过以下两种方法之一解决。
-  - 删除原账户，重新建立有密码的账户，重新尝试登录。（推荐）
-  - 修改本地安全设置。Win + R → 输入 `secpol.msc` → 回车。导航到以下路径：安全设置 → 本地策略 → 安全选项 → 账户: 使用空密码的本地帐户只允许进行控制台登录。修改为 已禁用。
+  - 删除原账户，重新建立有密码的账户，重新尝试登录（推荐）。
+  - 修改本地安全设置（强烈不推荐，存在重大安全风险）。Win + R → 输入 `secpol.msc` → 回车。导航到以下路径：安全设置 → 本地策略 → 安全选项 → 账户: 使用空密码的本地帐户只允许进行控制台登录。修改为 已禁用。
+
+
 
 ![79a500a6872b69efe09540933817b0b4](https://github.com/user-attachments/assets/54415f20-fff9-4810-9e02-a5141ea34403)
 
@@ -127,7 +127,10 @@ Set-ItemProperty -Path "HKLM:\Software\Policies\Microsoft\Windows NT\Terminal Se
 7. 我想关闭屏幕省电，但是关闭屏幕之后不运行了怎么办？
 - 使用 HDMI 线连接显示器。笔记本用户请自行探索。
 
+8. 使用本地远程时频繁出现以下提醒怎么办？
+![错误提示](https://github.com/user-attachments/assets/7f64ad91-6846-4de1-a464-1aac073362df)
 
+在脚本仓库订阅 `1Remote_RDP_Autoreconnection` 参考其中的 `README.md` 配置。
 
 
 
